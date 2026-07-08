@@ -75,15 +75,14 @@ class DepositWithdrawRequest(BaseModel):
     """
     Validation schema for deposit and withdrawal operations.
     """
-    account_id: str
     amount: float = Field(..., gt=0, description="Amount to deposit or withdraw")
     
 class TransferRequest(BaseModel):
     """
     Validation schema for transferring money between accounts.
     """
-    from_account_id: str
-    to_account_id: str
+    source_account_id: str = Field(..., description="Source account identifier")
+    target_account_id: str = Field(..., description="Target account identifier")
     amount: float = Field(..., gt=0, description="Amount to transfer")
 
 class LimitUpdateRequest(BaseModel):
