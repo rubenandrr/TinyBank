@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict # type: ignore
 
 class AccountType(str, Enum):
     """
@@ -117,3 +117,44 @@ class AuditLogResponse(BaseModel):
     action: str
     details: str
     timestamp: datetime
+    
+class LoginRequest(BaseModel):
+    """
+    Validation schema for admin authentication.
+    """
+    username: str = Field(..., description="Username of the user")
+    password: str = Field(..., description="Raw password of the user")
+
+class LoginResponse(BaseModel):
+    """
+    Response schema returning authentication outcome.
+    """
+    success: bool
+    message: str
+    user_id: str
+
+class TransferRequestStatus(str, Enum):
+    """
+    Represents the status of a pending transfer request.
+    """
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+class TransferRequestResponse(BaseModel):
+    """
+    Response schema detailing a pending limit transfer request.
+    """
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    source_account_id: str
+    target_account_id: str
+    amount: float
+    status: TransferRequestStatus
+    timestamp: datetime
+
+class TransferRequestApproval(BaseModel):
+    """
+    Validation schema for approving or rejecting a pending transfer.
+    """
+    approve: bool = Field(..., description="True to approve, False to reject")
