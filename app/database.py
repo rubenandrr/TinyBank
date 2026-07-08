@@ -5,12 +5,17 @@ during concurrent API access.
 """
 
 import threading
+import hashlib
 from datetime import datetime
 from typing import Dict, List, Any
 
-# System identifiers for the bank's tax collector account
+# System identifiers for the bank's system accounts
 BANK_TAX_USER_ID = "bank-tax-user"
 BANK_TAX_ACCOUNT_ID = "bank-tax-account"
+ADMIN_USER_ID = "admin-user"
+
+# Hashed password for the admin account (password is "12345" + static salt)
+ADMIN_PASSWORD_HASH = hashlib.sha256(b"12345-salt-tiny-bank").hexdigest()
 
 # Global lock to secure concurrent read/write operations
 db_lock = threading.Lock()
@@ -29,16 +34,34 @@ TRANSACTIONS: List[Dict[str, Any]] = []
 # Chronological list of administrative actions and system security logs
 AUDIT_LOGS: List[Dict[str, Any]] = []
 
-def seed_bank_tax():
+# List of pending transfer requests exceeding daily limits
+TRANSFER_REQUESTS: List[Dict[str, Any]] = []
+
+def seed_bank_system():
     """
-    Pre-registers the system tax collector user and its associated CHF current account.
+    Pre-registers the admin user, the system tax collector user,
+    and the associated CHF current tax account.
     """
+    now = datetime.now()
+    
+    # 1. Seed Admin User
+    USERS[ADMIN_USER_ID] = {
+        "id": ADMIN_USER_ID,
+        "name": "Tiny Bank - Admin",
+        "password_hash": ADMIN_PASSWORD_HASH,
+        "is_active": True,
+        "created_at": now,
+    }
+    
+    # 2. Seed Tax Collector User
     USERS[BANK_TAX_USER_ID] = {
         "id": BANK_TAX_USER_ID,
         "name": "Tiny Bank - Taxes",
         "is_active": True,
-        "created_at": datetime.now(),
+        "created_at": now,
     }
+    
+    # 3. Seed Tax Collector Account
     ACCOUNTS[BANK_TAX_ACCOUNT_ID] = {
         "id": BANK_TAX_ACCOUNT_ID,
         "user_id": BANK_TAX_USER_ID,
@@ -52,11 +75,11 @@ def seed_bank_tax():
         "withdrawal_spent_today": 0.0,
         "transfer_spent_today": 0.0,
         "transfers_count_today": 0,
-        "created_at": datetime.now(),
+        "created_at": now,
     }
 
-# Seed tax collector on startup
-seed_bank_tax()
+# Seed bank system on startup
+seed_bank_system()
 
 def reset_db():
     """
@@ -68,4 +91,5 @@ def reset_db():
         ACCOUNTS.clear()
         TRANSACTIONS.clear()
         AUDIT_LOGS.clear()
-        seed_bank_tax()
+        TRANSFER_REQUESTS.clear()
+        seed_bank_system()
