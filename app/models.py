@@ -132,6 +132,7 @@ class LoginResponse(BaseModel):
     success: bool
     message: str
     user_id: str
+    token: Optional[str] = None
 
 class TransferRequestStatus(str, Enum):
     """

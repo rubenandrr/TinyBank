@@ -3,7 +3,7 @@ This module contains the basic bank configurations, including reference exchange
 fetched dynamically via API, the currency exchange commission margin, and default daily limits.
 """
 
-import httpx
+import httpx # type: ignore
 
 # Fallback exchange rates (used if the external API is offline)
 DEFAULT_EXCHANGE_RATES = {
