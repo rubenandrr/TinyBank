@@ -149,7 +149,7 @@ def withdraw(account_id: str, amount: float) -> Dict[str, Any]:
             "amount": tax_in_acc_currency,
             "currency": acc["currency"],
             "related_account_id": BANK_TAX_ACCOUNT_ID,
-            "description": "Taxes de la banque",
+            "description": "Bank taxes",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_tax_out)
@@ -163,7 +163,7 @@ def withdraw(account_id: str, amount: float) -> Dict[str, Any]:
             "amount": tax_in_chf,
             "currency": "CHF",
             "related_account_id": account_id,
-            "description": "Taxes de la banque",
+            "description": "Bank taxes",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_tax_in)
@@ -311,7 +311,7 @@ def transfer(source_id: str, target_id: str, amount: float) -> tuple[Optional[Di
             "amount": tax_in_source,
             "currency": src["currency"],
             "related_account_id": BANK_TAX_ACCOUNT_ID,
-            "description": "Taxes de la banque",
+            "description": "Bank taxes",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_tax_out)
@@ -325,7 +325,7 @@ def transfer(source_id: str, target_id: str, amount: float) -> tuple[Optional[Di
             "amount": tax_in_chf,
             "currency": "CHF",
             "related_account_id": source_id,
-            "description": "Taxes de la banque",
+            "description": "Bank taxes",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_tax_in)
@@ -366,6 +366,25 @@ def resolve_transfer_request(request_id: str, approve: bool) -> Dict[str, Any]:
         if not approve:
             req["status"] = "REJECTED"
             add_audit_log("TRANSFER_REJECTED", f"Transfer request {request_id} was rejected by the admin.")
+            
+            # Record rejected transaction entry for history
+            source_id = req["source_account_id"]
+            target_id = req["target_account_id"]
+            amount = req["amount"]
+            if source_id in ACCOUNTS:
+                src = ACCOUNTS[source_id]
+                tx_rej = {
+                    "id": str(uuid.uuid4()),
+                    "sequence": len(TRANSACTIONS),
+                    "account_id": source_id,
+                    "type": TransactionType.TRANSFER_REJECTED,
+                    "amount": amount,
+                    "currency": src["currency"],
+                    "related_account_id": target_id,
+                    "description": "Rejected by the bank",
+                    "timestamp": datetime.now()
+                }
+                TRANSACTIONS.append(tx_rej)
             return req
 
         # Executing approval
@@ -424,7 +443,7 @@ def resolve_transfer_request(request_id: str, approve: bool) -> Dict[str, Any]:
             "amount": amount,
             "currency": src["currency"],
             "related_account_id": target_id,
-            "description": "Approuvé par la banque",
+            "description": "Approved by the bank",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_out)
@@ -437,7 +456,7 @@ def resolve_transfer_request(request_id: str, approve: bool) -> Dict[str, Any]:
             "amount": net_target,
             "currency": tgt["currency"],
             "related_account_id": source_id,
-            "description": "Approuvé par la banque",
+            "description": "Approved by the bank",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_in)
@@ -451,7 +470,7 @@ def resolve_transfer_request(request_id: str, approve: bool) -> Dict[str, Any]:
             "amount": tax_in_source,
             "currency": src["currency"],
             "related_account_id": BANK_TAX_ACCOUNT_ID,
-            "description": "Taxes de la banque",
+            "description": "Bank taxes",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_tax_out)
@@ -465,7 +484,7 @@ def resolve_transfer_request(request_id: str, approve: bool) -> Dict[str, Any]:
             "amount": tax_in_chf,
             "currency": "CHF",
             "related_account_id": source_id,
-            "description": "Taxes de la banque",
+            "description": "Bank taxes",
             "timestamp": now
         }
         TRANSACTIONS.append(tx_tax_in)

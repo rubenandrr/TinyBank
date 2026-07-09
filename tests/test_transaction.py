@@ -151,7 +151,7 @@ def test_transfer_multi_currency(client):
     # Create Bob's USD account (requires admin token)
     acc_b_usd = client.post("/accounts", json={
         "user_id": user_b["id"],
-        "account_type": "CURRENT",
+        "account_type": "SAVINGS",
         "currency": "USD"
     }, headers=headers).json()
     acc_b_id = acc_b_usd["id"]

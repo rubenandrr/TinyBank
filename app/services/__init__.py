@@ -15,6 +15,7 @@ from app.services.account_service import (
     freeze_account,
     unfreeze_account,
     update_account_limits,
+    delete_account,
 )
 
 from app.services.transaction_service import (

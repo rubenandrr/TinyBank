@@ -14,18 +14,14 @@ def test_create_user(client):
     assert data["is_active"] is True
     assert "id" in data
     
-    # Must have 2 default accounts in CHF
+    # Must have 1 default account in CHF (Current only)
     accounts = data["accounts"]
-    assert len(accounts) == 2
+    assert len(accounts) == 1
     
-    types = [acc["account_type"] for acc in accounts]
-    assert "CURRENT" in types
-    assert "SAVINGS" in types
-    
-    for acc in accounts:
-        assert acc["balance"] == 0.0
-        assert acc["currency"] == "CHF"
-        assert acc["is_frozen"] is False
+    assert accounts[0]["account_type"] == "CURRENT"
+    assert accounts[0]["balance"] == 0.0
+    assert accounts[0]["currency"] == "CHF"
+    assert accounts[0]["is_frozen"] is False
 
 def test_list_users_anonymous(client):
     """
@@ -115,7 +111,7 @@ def test_create_additional_account_requires_admin(client):
     # Create account with admin token
     res_acc_admin = client.post("/accounts", json={
         "user_id": user_id,
-        "account_type": "CURRENT",
+        "account_type": "SAVINGS",
         "currency": "USD"
     }, headers=headers)
     assert res_acc_admin.status_code == 201

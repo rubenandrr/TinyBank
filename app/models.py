@@ -26,6 +26,7 @@ class TransactionType(str, Enum):
     WITHDRAWAL = "WITHDRAWAL"
     TRANSFER_IN = "TRANSFER_IN"
     TRANSFER_OUT = "TRANSFER_OUT"
+    TRANSFER_REJECTED = "TRANSFER_REJECTED"
     
 class UserCreate(BaseModel):
     """

@@ -29,6 +29,11 @@ def create_account_no_lock(user_id: str, account_type: AccountType, currency: Cu
     if not USERS[user_id]["is_active"]:
         raise InactiveUserException("Cannot open an account for a deactivated user.")
 
+    # Prevent creating duplicate accounts of the same type and currency
+    existing = [acc for acc in ACCOUNTS.values() if acc["user_id"] == user_id and acc["account_type"] == account_type and acc["currency"] == currency]
+    if existing:
+        raise BankException(f"Client already possesses a {account_type.value} account in {currency.value}.", status_code=400)
+
     account_id = str(uuid.uuid4())
     now = datetime.now()
 
@@ -106,3 +111,54 @@ def update_account_limits(account_id: str, limit_update: LimitUpdateRequest) -> 
 
         add_audit_log("LIMITS_UPDATED", f"Limits updated for account {account_id}.")
         return acc
+
+def delete_account(account_id: str) -> Dict[str, Any]:
+    """
+    Deletes an additional account of a client and automatically transfers
+    its remaining balance (converted if necessary) into their primary base account.
+    """
+    from app.config import EXCHANGE_RATES
+
+    with db_lock:
+        if account_id not in ACCOUNTS:
+            raise EntityNotFoundException(f"Account with ID {account_id} does not exist.")
+        
+        acc = ACCOUNTS[account_id]
+        user_id = acc["user_id"]
+        
+        # Retrieve all accounts for this user
+        user_accounts = [a for a in ACCOUNTS.values() if a["user_id"] == user_id]
+        
+        if len(user_accounts) <= 1:
+            raise BankException("Cannot delete the only account of a client.", status_code=400)
+            
+        # Primary base account is the oldest account
+        user_accounts.sort(key=lambda x: x["created_at"])
+        base_acc = user_accounts[0]
+        
+        if acc["id"] == base_acc["id"]:
+            raise BankException("Cannot delete the primary base account of a client.", status_code=400)
+            
+        balance_to_transfer = acc["balance"]
+        net_transfer = 0.0
+        
+        if balance_to_transfer > 0:
+            if acc["currency"] == base_acc["currency"]:
+                net_transfer = balance_to_transfer
+            else:
+                # Convert using mid-market exchange rates without margin/tax for account closing
+                amount_in_eur = balance_to_transfer / EXCHANGE_RATES[acc["currency"].value]
+                net_transfer = round(amount_in_eur * EXCHANGE_RATES[base_acc["currency"].value], 2)
+                
+            base_acc["balance"] = round(base_acc["balance"] + net_transfer, 2)
+            
+            add_audit_log(
+                "ACCOUNT_DELETED",
+                f"Account {account_id} deleted. Transferred {balance_to_transfer} {acc['currency'].value} "
+                f"({net_transfer} {base_acc['currency'].value}) to base account {base_acc['id']}."
+            )
+        else:
+            add_audit_log("ACCOUNT_DELETED", f"Account {account_id} deleted (balance was 0.0).")
+            
+        del ACCOUNTS[account_id]
+        return base_acc

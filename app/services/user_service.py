@@ -33,9 +33,8 @@ def create_user(name: str) -> Dict[str, Any]:
         USERS[user_id] = user
         add_audit_log("USER_CREATED", f"User '{name}' (ID: {user_id}) created.")
 
-        # Automatically open default accounts in CHF
+        # Automatically open default account in CHF (Current only)
         create_account_no_lock(user_id, AccountType.CURRENT, Currency.CHF)
-        create_account_no_lock(user_id, AccountType.SAVINGS, Currency.CHF)
 
         return get_user_no_lock(user_id)
 

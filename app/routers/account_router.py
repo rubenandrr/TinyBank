@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Header # type: ignore
 
 from app.models import AccountCreate, AccountResponse, LimitUpdateRequest
-from app.services import create_account, freeze_account, unfreeze_account, update_account_limits, validate_admin_token
+from app.services import create_account, freeze_account, unfreeze_account, update_account_limits, validate_admin_token, delete_account
 from app.exceptions import BankException # type: ignore
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
@@ -51,3 +51,12 @@ def update_limits(account_id: str, limit_in: LimitUpdateRequest, x_admin_token: 
     if not x_admin_token or not validate_admin_token(x_admin_token):
         raise BankException("Access denied. Administrative authorization required.", status_code=403)
     return update_account_limits(account_id=account_id, limit_update=limit_in)
+
+@router.delete("/{account_id}", response_model=AccountResponse)
+def delete_existing_account(account_id: str, x_admin_token: Optional[str] = Header(None)):
+    """
+    Deletes an additional account, automatically transferring any remaining balance to the user's primary base account.
+    """
+    if not x_admin_token or not validate_admin_token(x_admin_token):
+        raise BankException("Access denied. Administrative authorization required.", status_code=403)
+    return delete_account(account_id=account_id)
